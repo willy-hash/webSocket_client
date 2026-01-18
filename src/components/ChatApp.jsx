@@ -10,7 +10,12 @@ function ChatApp() {
 
   useEffect(() => {
     // Inicializar socket
-    socketRef.current = io("https://webscoketrender.onrender.com");
+    socketRef.current = io("https://webscoketrender.onrender.com", {
+      transports: ["websocket"],
+      withCredentials: true
+    });
+    
+    
 
     // Escuchar mensajes
     socketRef.current.on('chat message', (msg) => {
