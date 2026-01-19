@@ -23,6 +23,13 @@ body {
   backdrop-filter: blur(10px);
 }
 
+p {
+  font-weight: bold;
+  padding: 0 1rem;
+  display: flex;
+  align-self: center;
+}
+
 #input {
   border: none;
   padding: 0 1rem;

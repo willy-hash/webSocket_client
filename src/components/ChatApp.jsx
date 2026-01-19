@@ -7,27 +7,53 @@ function ChatApp() {
   const [inputValue, setInputValue] = useState('');
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
+
     // Inicializar socket
     socketRef.current = io("https://webscoketrender.onrender.com", {
       transports: ["websocket"],
       withCredentials: true
     });
     
-    
-
     // Escuchar mensajes
     socketRef.current.on('chat message', (msg) => {
       console.log('message received from server: ', msg);
 
       setMessages((prevMessages) => [...prevMessages, msg]);
-
-      socketRef.current.on('disconnect', () => {
-        console.log('disconnected from server');
-      });
       
     });
+
+    socketRef.current.on("connect", () => {
+
+      setConnected(true);
+
+      console.log("Conectado al servidor:", socketRef.current.id);
+    });
+
+
+    socketRef.current.on("connect_error", (error) => {
+      console.error("Error de conexión:", error.message);
+    });
+
+    socketRef.current.on("error", (error) => {
+      console.error("Error del socket:", error);
+    });
+
+
+    socketRef.current.on("disconnect", (reason, details) =>  {
+
+      setConnected(false);
+
+      console.log({
+        messages : 'disconnected from server',
+        reason : reason,
+        details : details
+      });
+
+    });
+
 
     // Cleanup al desmontar
     return () => {
@@ -37,10 +63,12 @@ function ChatApp() {
     };
   }, []);
 
+
   // Scroll automático cuando hay nuevos mensajes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -59,6 +87,8 @@ function ChatApp() {
         <li ref={messagesEndRef} style={{ height: 0 }}></li>
       </ul>
       
+      <p>Estado: {connected ? "Conectado" : "Desconectado"}</p>
+  
       <form id="form" onSubmit={handleSubmit}>
         <input
           id="input"
