@@ -1,103 +1,68 @@
-import { useState, useEffect, useRef } from 'react';
-import io from 'socket.io-client';
+import { useState, useEffect } from 'react';
 import '../ChatApp.css';
 
 function ChatApp() {
-  const [messages, setMessages] = useState([]);
-  const [inputValue, setInputValue] = useState('');
-  const socketRef = useRef(null);
-  const messagesEndRef = useRef(null);
-  const [connected, setConnected] = useState(false);
+
+  const [cliente_field, setCliente_field] = useState('');
+  const [valor_pagado_field, setValor_pagado_field] = useState('');
+
+
 
   useEffect(() => {
 
-    // Inicializar socket
-    socketRef.current = io("https://webscoketrender.onrender.com", {
-      transports: ["websocket"],
-      withCredentials: true
-    });
-    
-    // Escuchar mensajes
-    socketRef.current.on('chat message', (msg) => {
-      console.log('message received from server: ', msg);
 
-      setMessages((prevMessages) => [...prevMessages, msg]);
-      
-    });
-
-    socketRef.current.on("connect", () => {
-
-      setConnected(true);
-
-      console.log("Conectado al servidor:", socketRef.current.id);
-    });
-
-
-    socketRef.current.on("connect_error", (error) => {
-      console.error("Error de conexión:", error.message);
-    });
-
-    socketRef.current.on("error", (error) => {
-      console.error("Error del socket:", error);
-    });
-
-
-    socketRef.current.on("disconnect", (reason, details) =>  {
-
-      setConnected(false);
-
-      console.log({
-        messages : 'disconnected from server',
-        reason : reason,
-        details : details
-      });
-
-    });
-
-
-    // Cleanup al desmontar
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-    };
   }, []);
 
+  const saveTasks = async (cliente_field, valor_pagado_field) => {
 
-  // Scroll automático cuando hay nuevos mensajes
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    try {
 
+      const response = await fetch("http://localhost:8000/api/registroPago", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ id_cobrador: 1, cliente: cliente_field, valor: valor_pagado_field })
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (inputValue.trim()) {
-      socketRef.current.emit('chat message', inputValue);
-      setInputValue('');
+      });
+
+      const result = await response.json();
+      console.log(result);
+
+      if (!response.ok) {
+
+        const errorText = await response.text();
+        throw new Error(`ERROR (${response.status}): ${errorText}`);
+      }
+
+    } catch (error) {
+      console.error("Error to save data:", error);
+      throw Error
     }
+
+  };
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    await saveTasks(cliente_field, valor_pagado_field);
+
+    setCliente_field('');
+    setValor_pagado_field('');
+
   };
 
   return (
     <>
-      <ul id="messages">
-        {messages.map((msg, index) => (
-          <li key={index}>{msg}</li>
-        ))}
-        <li ref={messagesEndRef} style={{ height: 0 }}></li>
-      </ul>
-      
-      <p>Estado: {connected ? "Conectado" : "Desconectado"}</p>
-  
+
       <form id="form" onSubmit={handleSubmit}>
-        <input
-          id="input"
-          type="text"
-          autoComplete="off"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-        />
-        <button type="submit">Send</button>
+
+        <input id="cliente_field" type="text" autoComplete="off" value={cliente_field} onChange={(e) => setCliente_field(e.target.value)} placeholder="Cliente" />
+        <input id="valor_pagado_field" type="text" autoComplete="off" value={valor_pagado_field} onChange={(e) => setValor_pagado_field(e.target.value)} placeholder="Valor Pagado" />
+
+
+        <button type="submit">Registar pago</button>
       </form>
     </>
   );
